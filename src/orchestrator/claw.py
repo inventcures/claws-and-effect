@@ -8,8 +8,8 @@ from src.orchestrator.router import TriageRouter
 from src.worker.reviewer_instance import ReviewerInstance
 
 class ClawOrchestrator:
-    def __init__(self, api_key: str = None):
-        self.api_key = api_key
+    def __init__(self, byok_config: List[Dict[str, str]] = None):
+        self.byok_config = byok_config or []
         self.memory = MemoryLedger(filename="claw_memory.json")
         self.memory.clear()
         self.workers: List[CodeInstance] = []
@@ -50,7 +50,7 @@ class ClawOrchestrator:
                 memory_store=self.memory, 
                 router=self.router, 
                 emits=[f"task:completed:{task['id']}"], 
-                api_key=self.api_key
+                byok_config=self.byok_config
             )
             self.workers.append(worker)
 

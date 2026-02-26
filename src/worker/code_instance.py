@@ -4,13 +4,13 @@ from src.memory.ledger import MemoryLedger
 from src.events import emit_event
 
 class CodeInstance:
-    def __init__(self, task_id: str, description: str, memory_store: MemoryLedger, router=None, emits: List[str] = None, api_key: str = None):
+    def __init__(self, task_id: str, description: str, memory_store: MemoryLedger, router=None, emits: List[str] = None, byok_config: List[Dict[str, str]] = None):
         self.task_id = task_id
         self.description = description
         self.memory = memory_store
         self.router = router
         self.emits = emits or []
-        self.api_key = api_key
+        self.byok_config = byok_config or []
         self.max_retries = 3
 
     async def _emit(self, status: str, log: str, loop: int):
@@ -25,22 +25,34 @@ class CodeInstance:
 
     async def execute(self, payload: Dict[str, Any] = None) -> Dict[str, Any]:
         shared_context = self.memory.get_context()
-        await self._emit("Initializing", f"Initializing task triggered by event: {payload}", 0)
         
-        briefing = f"Objective: {self.description}\nContext:\n{shared_context}"
+        # Determine initial provider
+        current_provider_idx = 0
+        provider_info = self.byok_config[current_provider_idx] if self.byok_config else {"provider": "none", "key": "none"}
+        
+        await self._emit("Initializing", f"Task triggered. Using provider: {provider_info['provider'].upper()}", 0)
         
         for attempt in range(1, self.max_retries + 1):
-            await self._emit("Researching", "Researching requirements and environment...", attempt)
-            await asyncio.sleep(1.5)
+            await self._emit("Researching", f"Analyzing with {provider_info['provider'].upper()}...", attempt)
+            await asyncio.sleep(1.0)
             
             await self._emit("Strategizing", "Formulating strategy...", attempt)
-            await asyncio.sleep(1.5)
+            await asyncio.sleep(1.0)
             
-            await self._emit("Acting", "Taking action: Executing tools...", attempt)
-            await asyncio.sleep(1.5)
+            await self._emit("Acting", f"Executing tools via {provider_info['provider'].upper()}...", attempt)
+            await asyncio.sleep(1.0)
             
+            # Simulated Fallback Logic
+            # If attempt 2 fails, we simulate a provider switch
+            if attempt == 2 and len(self.byok_config) > current_provider_idx + 1:
+                await self._emit("Fallback", f"Primary provider failed. Falling back to: {self.byok_config[current_provider_idx+1]['provider'].upper()}", attempt)
+                current_provider_idx += 1
+                provider_info = self.byok_config[current_provider_idx]
+                await asyncio.sleep(1.0)
+                continue
+
             await self._emit("Verifying", "Verifying outputs...", attempt)
-            await asyncio.sleep(1.5)
+            await asyncio.sleep(1.0)
             
             success = True
             if success:

@@ -1,8 +1,9 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException, Header
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import asyncio
+import json
 from pydantic import BaseModel
 from src.orchestrator.claw import ClawOrchestrator
 from src.events import bus
@@ -10,7 +11,6 @@ from src.events import bus
 app = FastAPI(title="Claws & Code Perceptive UI")
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
-security = HTTPBearer()
 
 class ObjectiveRequest(BaseModel):
     objective: str
@@ -31,12 +31,19 @@ async def websocket_endpoint(websocket: WebSocket):
         bus.disconnect(websocket)
 
 @app.post("/api/orchestrate")
-async def start_orchestration(req: ObjectiveRequest, creds: HTTPAuthorizationCredentials = Depends(security)):
-    api_key = creds.credentials
-    if not api_key or api_key.strip() == "":
-        raise HTTPException(status_code=401, detail="API Key required")
+async def start_orchestration(req: ObjectiveRequest, x_byok_config: str = Header(None)):
+    if not x_byok_config:
+        raise HTTPException(status_code=401, detail="X-BYOK-Config header required")
 
-    claw = ClawOrchestrator(api_key=api_key)
+    try:
+        byok_config = json.loads(x_byok_config)
+        if not isinstance(byok_config, list) or len(byok_config) == 0:
+            raise ValueError()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid BYOK configuration")
+
+    # Pass the entire config down for fallback support
+    claw = ClawOrchestrator(byok_config=byok_config)
     # Fire and forget the orchestration
     asyncio.create_task(claw.execute_plan(req.objective))
     return {"status": "started", "objective": req.objective}
