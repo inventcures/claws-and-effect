@@ -4,12 +4,13 @@ from src.memory.ledger import MemoryLedger
 from src.events import emit_event
 
 class CodeInstance:
-    def __init__(self, task_id: str, description: str, memory_store: MemoryLedger, router=None, emits: List[str] = None):
+    def __init__(self, task_id: str, description: str, memory_store: MemoryLedger, router=None, emits: List[str] = None, api_key: str = None):
         self.task_id = task_id
         self.description = description
         self.memory = memory_store
         self.router = router
         self.emits = emits or []
+        self.api_key = api_key
         self.max_retries = 3
 
     async def _emit(self, status: str, log: str, loop: int):

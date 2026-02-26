@@ -6,7 +6,8 @@ from src.events import emit_event
 from src.orchestrator.router import TriageRouter
 
 class ClawOrchestrator:
-    def __init__(self):
+    def __init__(self, api_key: str = None):
+        self.api_key = api_key
         self.memory = MemoryLedger(filename="claw_memory.json")
         self.memory.clear()
         self.workers: List[CodeInstance] = []
@@ -44,7 +45,8 @@ class ClawOrchestrator:
                 description=task["desc"], 
                 memory_store=self.memory, 
                 router=self.router, 
-                emits=task["emits"]
+                emits=task["emits"],
+                api_key=self.api_key
             )
             self.workers.append(worker)
 
