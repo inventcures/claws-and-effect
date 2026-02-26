@@ -1,0 +1,8 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.env
+claw_memory.json
+events.jsonl
+final_report.md

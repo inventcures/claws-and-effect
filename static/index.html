@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claws & Code - Perceptive UI</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-panel: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-yellow: #f59e0b;
+            --border: #334155;
+        }
+        body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background-color: var(--bg-dark); color: var(--text-main); display: grid; grid-template-rows: 80px 1fr; grid-template-columns: 300px 1fr 300px; height: 100vh; overflow: hidden; }
+        
+        /* Zone A: Command Deck */
+        .command-deck { grid-column: 1 / -1; background-color: var(--bg-panel); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 20px; }
+        .command-deck input { flex: 1; padding: 12px; background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: 6px; font-size: 16px; }
+        .command-deck button { padding: 12px 24px; background: var(--accent-blue); border: none; color: white; font-weight: bold; border-radius: 6px; cursor: pointer; transition: 0.2s; }
+        .command-deck button:hover { background: #2563eb; }
+        .status-bar { padding: 8px 16px; background: #1e3a8a; border-radius: 20px; font-size: 14px; font-weight: 500; }
+
+        /* Zone B: Claw Hub */
+        .claw-hub { background-color: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; }
+        .panel-header { padding: 16px; font-weight: bold; border-bottom: 1px solid var(--border); text-transform: uppercase; font-size: 12px; letter-spacing: 1px; color: var(--text-muted); }
+        .thought-stream { padding: 16px; display: flex; flex-direction: column; gap: 12px; font-size: 13px; font-family: monospace; flex: 1; overflow-y: auto;}
+        .thought-log { padding: 8px; background: var(--bg-dark); border-left: 3px solid var(--accent-blue); border-radius: 4px; }
+
+        /* Zone C: Worker Matrix */
+        .worker-matrix { padding: 24px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; align-content: start;}
+        .worker-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s;}
+        .worker-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+        .worker-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02);}
+        .worker-title { font-weight: 600; font-size: 14px; }
+        .status-pill { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+        .status-researching { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .status-acting { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .status-verifying { background: rgba(139, 92, 246, 0.2); color: #c084fc; }
+        .status-success { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .worker-body { padding: 16px; flex: 1; display: flex; flex-direction: column; gap: 12px;}
+        .worker-desc { font-size: 13px; color: var(--text-muted); }
+        .loop-indicator { font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; }
+        .worker-log { background: #000; color: #a3e635; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 12px; white-space: pre-wrap; height: 60px; overflow-y: auto;}
+        .btn-intervene { margin-top: auto; padding: 8px; background: transparent; border: 1px solid var(--border); color: var(--text-main); border-radius: 6px; cursor: pointer; font-size: 13px; transition: 0.2s; }
+        .btn-intervene:hover { background: rgba(255,255,255,0.05); }
+
+        /* Zone D: Memory Ledger */
+        .memory-ledger { background-color: var(--bg-panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; }
+        .memory-feed { padding: 16px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;}
+        .memory-note { background: var(--bg-dark); border-radius: 6px; padding: 12px; font-size: 13px; border-left: 3px solid var(--accent-green);}
+        .note-meta { display: flex; justify-content: space-between; color: var(--text-muted); font-size: 11px; margin-bottom: 6px; text-transform: uppercase;}
+        .note-tag { background: #374151; padding: 2px 6px; border-radius: 4px; margin-right: 4px; }
+    </style>
+</head>
+<body>
+
+    <div class="command-deck">
+        <div style="font-weight: 900; font-size: 20px; letter-spacing: 1px; color: var(--accent-blue);">CLAW // CODE</div>
+        <input type="text" id="objective-input" placeholder="Enter high-level objective in English..." value="Here is the local IP and username/password of my DGX Spark. Log in, set up ssh keys, set up vLLM, download and bench Qwen3-VL...">
+        <button id="btn-deploy" onclick="deployClaw()">Deploy Claw</button>
+        <div class="status-bar" id="global-status">IDLE - AWAITING OBJECTIVE</div>
+    </div>
+
+    <div class="claw-hub">
+        <div class="panel-header">Claw Hub (Orchestrator)</div>
+        <div class="thought-stream" id="thought-stream">
+            <div style="color: var(--text-muted); font-style: italic;">Awaiting cognitive boot...</div>
+        </div>
+    </div>
+
+    <div class="worker-matrix" id="worker-matrix">
+        <!-- Worker cards will be injected here -->
+        <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); margin-top: 100px;">
+            <h2>The Matrix is Empty</h2>
+            <p>Deploy a Claw to spin up parallel Code instances.</p>
+        </div>
+    </div>
+
+    <div class="memory-ledger">
+        <div class="panel-header">Memory Ledger (Shared State)</div>
+        <div class="memory-feed" id="memory-feed">
+            <!-- Notes injected here -->
+        </div>
+    </div>
+
+    <script>
+        const ws = new WebSocket("ws://" + window.location.host + "/ws/events");
+        const workerMatrix = document.getElementById("worker-matrix");
+        const thoughtStream = document.getElementById("thought-stream");
+        const memoryFeed = document.getElementById("memory-feed");
+        const globalStatus = document.getElementById("global-status");
+        
+        let workers = {};
+
+        ws.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            handleEvent(msg.type, msg.data);
+        };
+
+        function handleEvent(type, data) {
+            if (type === "objective_start") {
+                globalStatus.innerText = "ORCHESTRATING // DECOMPOSING TASK";
+                globalStatus.style.background = "#b45309";
+                thoughtStream.innerHTML = '';
+                workerMatrix.innerHTML = '';
+            }
+            else if (type === "claw_update") {
+                const log = document.createElement("div");
+                log.className = "thought-log";
+                log.innerText = `> ${data.log}`;
+                thoughtStream.appendChild(log);
+                thoughtStream.scrollTop = thoughtStream.scrollHeight;
+            }
+            else if (type === "task_tree") {
+                globalStatus.innerText = `ORCHESTRATING // MANAGING ${data.tasks.length} PARALLEL WORKERS`;
+                globalStatus.style.background = "#1e3a8a";
+                data.tasks.forEach(task => {
+                    createWorkerCard(task);
+                });
+            }
+            else if (type === "worker_update") {
+                updateWorkerCard(data);
+            }
+            else if (type === "memory_update") {
+                renderMemory(data.memory);
+            }
+            else if (type === "orchestration_complete") {
+                globalStatus.innerText = data.status === 'success' ? "ORCHESTRATION COMPLETE // HANDOFF READY" : "ORCHESTRATION FAILED // INTERVENTION REQUIRED";
+                globalStatus.style.background = data.status === 'success' ? "#065f46" : "#7f1d1d";
+            }
+        }
+
+        function createWorkerCard(task) {
+            const card = document.createElement("div");
+            card.className = "worker-card";
+            card.id = `worker-${task.id}`;
+            card.innerHTML = `
+                <div class="worker-header">
+                    <div class="worker-title">${task.id}</div>
+                    <div class="status-pill status-researching" id="status-${task.id}">INIT</div>
+                </div>
+                <div class="worker-body">
+                    <div class="worker-desc">${task.desc}</div>
+                    <div class="loop-indicator">
+                        <span>Tenacity Loop</span>
+                        <span id="loop-${task.id}">0/3</span>
+                    </div>
+                    <div class="worker-log" id="log-${task.id}">Booting environment...</div>
+                    <button class="btn-intervene" onclick="alert('HITL Intervention triggered for ${task.id}')">Human Intervene</button>
+                </div>
+            `;
+            workerMatrix.appendChild(card);
+            workers[task.id] = card;
+        }
+
+        function updateWorkerCard(data) {
+            if (!workers[data.task_id]) return;
+            
+            const statusEl = document.getElementById(`status-${data.task_id}`);
+            const logEl = document.getElementById(`log-${data.task_id}`);
+            const loopEl = document.getElementById(`loop-${data.task_id}`);
+
+            statusEl.innerText = data.status;
+            logEl.innerText = `> ${data.log}`;
+            loopEl.innerText = `Attempt ${data.loop}`;
+
+            // Style based on status
+            statusEl.className = "status-pill";
+            if (data.status === "Success") {
+                statusEl.classList.add("status-success");
+            } else if (data.status === "Failed") {
+                statusEl.style.background = "rgba(239, 68, 68, 0.2)";
+                statusEl.style.color = "#f87171";
+            } else if (data.status === "Verifying") {
+                statusEl.classList.add("status-verifying");
+            } else if (data.status === "Acting") {
+                statusEl.classList.add("status-acting");
+            } else {
+                statusEl.classList.add("status-researching");
+            }
+        }
+
+        function renderMemory(memoryArray) {
+            memoryFeed.innerHTML = '';
+            // Display last 50 notes, reverse chronological
+            [...memoryArray].reverse().slice(0, 50).forEach(note => {
+                const el = document.createElement("div");
+                el.className = "memory-note";
+                
+                let tagsHtml = note.tags.map(t => `<span class="note-tag">${t}</span>`).join('');
+                const time = new Date(note.timestamp).toLocaleTimeString();
+                
+                el.innerHTML = `
+                    <div class="note-meta">
+                        <span>${note.agent_id}</span>
+                        <span>${time}</span>
+                    </div>
+                    <div style="margin-bottom: 8px;">${note.note}</div>
+                    <div style="font-size: 10px;">${tagsHtml}</div>
+                `;
+                if(note.tags.includes('error')) el.style.borderLeftColor = "var(--accent-red)";
+                if(note.tags.includes('success')) el.style.borderLeftColor = "var(--accent-green)";
+                if(note.tags.includes('objective')) el.style.borderLeftColor = "var(--accent-blue)";
+                
+                memoryFeed.appendChild(el);
+            });
+        }
+
+        async function deployClaw() {
+            const objective = document.getElementById("objective-input").value;
+            const btn = document.getElementById("btn-deploy");
+            btn.disabled = true;
+            btn.innerText = "Deploying...";
+            
+            await fetch("/api/orchestrate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ objective })
+            });
+
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerText = "Deploy Claw";
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
