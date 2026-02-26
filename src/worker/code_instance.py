@@ -1,13 +1,15 @@
 import asyncio
-from typing import Dict, Any
+from typing import Dict, Any, List
 from src.memory.ledger import MemoryLedger
 from src.events import emit_event
 
 class CodeInstance:
-    def __init__(self, task_id: str, description: str, memory_store: MemoryLedger):
+    def __init__(self, task_id: str, description: str, memory_store: MemoryLedger, router=None, emits: List[str] = None):
         self.task_id = task_id
         self.description = description
         self.memory = memory_store
+        self.router = router
+        self.emits = emits or []
         self.max_retries = 3
 
     async def _emit(self, status: str, log: str, loop: int):
@@ -20,8 +22,9 @@ class CodeInstance:
             "loop": f"{loop}/{self.max_retries}"
         })
 
-    async def execute(self, shared_context: str) -> Dict[str, Any]:
-        await self._emit("Initializing", f"Initializing task: {self.description}", 0)
+    async def execute(self, payload: Dict[str, Any] = None) -> Dict[str, Any]:
+        shared_context = self.memory.get_context()
+        await self._emit("Initializing", f"Initializing task triggered by event: {payload}", 0)
         
         briefing = f"Objective: {self.description}\nContext:\n{shared_context}"
         
@@ -47,6 +50,13 @@ class CodeInstance:
                     tags=["success", self.task_id]
                 )
                 await emit_event("memory_update", {"memory": self.memory.memory})
+                
+                # PubSub Emit
+                if self.router:
+                    for event_topic in self.emits:
+                        await self._emit("Publishing", f"Publishing downstream event: {event_topic}", attempt)
+                        await self.router.publish(event_topic, {"task_id": self.task_id, "status": "success"})
+                        
                 return {"task_id": self.task_id, "status": "success", "output": "Sub-task executed."}
             else:
                 await self._emit("Failed", "Verification failed. Retrying...", attempt)
