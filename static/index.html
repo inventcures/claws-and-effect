@@ -3,273 +3,417 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Claws & Code - AgentsView Inspired</title>
+    <title>Claws & Code | Architect Console</title>
     <style>
         :root {
-            /* Inspired by AgentsView / shadcn dark theme */
-            --bg-base: #09090b;
-            --bg-panel: #18181b;
-            --bg-hover: #27272a;
-            --border: #27272a;
-            --text-main: #fafafa;
-            --text-muted: #a1a1aa;
-            --accent: #3b82f6;
-            --accent-green: #22c55e;
-            --accent-red: #ef4444;
-            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            --font-mono: 'ui-monospace', 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
+            /* Distinct, industrial-cybernetic theme for Claws & Code */
+            --bg-deep: #050505;
+            --bg-surface: #111111;
+            --bg-surface-elevated: #1a1a1a;
+            --border-subtle: #222;
+            --border-focus: #444;
+            --text-primary: #ededed;
+            --text-secondary: #888;
+            --claw-accent: #00e5ff; /* Cyan for the Orchestrator */
+            --worker-accent: #ff6d00; /* Orange for Workers */
+            --success: #00e676;
+            --error: #ff1744;
+            --font-main: 'Geist', 'Inter', system-ui, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
         }
 
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        body { 
-            margin: 0; 
-            font-family: var(--font-sans); 
-            background-color: var(--bg-base); 
-            color: var(--text-main); 
-            display: grid; 
-            grid-template-rows: 60px 1fr; 
-            grid-template-columns: 280px 1fr 320px; 
-            height: 100vh; 
-            overflow: hidden; 
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-deep);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
-        
-        /* Header / Command Deck */
-        header { 
-            grid-column: 1 / -1; 
-            background-color: var(--bg-base); 
-            border-bottom: 1px solid var(--border); 
-            display: flex; 
-            align-items: center; 
-            padding: 0 20px; 
-            gap: 16px; 
-        }
-        .logo { font-weight: 700; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px;}
-        .logo svg { width: 18px; height: 18px; fill: var(--text-main); }
-        
-        .search-trigger {
-            margin-left: auto;
-            background: var(--bg-panel);
-            border: 1px solid var(--border);
-            color: var(--text-muted);
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 13px;
+
+        /* Architect Command Bar (Top) */
+        .architect-bar {
+            padding: 16px 24px;
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border-subtle);
             display: flex;
             align-items: center;
-            gap: 40px;
+            gap: 24px;
+            z-index: 10;
+        }
+
+        .brand {
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-size: 14px;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+        .brand .claw { color: var(--claw-accent); }
+        .brand .code { color: var(--worker-accent); }
+
+        .objective-input {
+            flex: 1;
+            display: flex;
+            background: var(--bg-deep);
+            border: 1px solid var(--border-subtle);
+            border-radius: 4px;
+            transition: border-color 0.2s;
+        }
+        .objective-input:focus-within { border-color: var(--claw-accent); }
+        
+        .objective-input input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            padding: 12px 16px;
+            color: var(--text-primary);
+            font-size: 14px;
+            outline: none;
+            font-family: var(--font-mono);
+        }
+        
+        .btn-launch {
+            background: var(--claw-accent);
+            color: #000;
+            border: none;
+            padding: 0 24px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
             cursor: pointer;
+            transition: opacity 0.2s;
         }
-        .search-trigger kbd { font-family: var(--font-mono); background: var(--bg-hover); padding: 2px 4px; border-radius: 4px; font-size: 11px;}
+        .btn-launch:hover { opacity: 0.8; }
 
-        /* Left Sidebar: Memory / Sessions */
-        .sidebar { 
-            background-color: var(--bg-base); 
-            border-right: 1px solid var(--border); 
-            display: flex; 
-            flex-direction: column; 
+        /* Main Workspace */
+        .workspace {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
         }
-        .panel-header { 
-            padding: 16px; 
-            font-size: 12px; 
-            font-weight: 600; 
-            color: var(--text-muted); 
-            text-transform: uppercase; 
-            letter-spacing: 0.5px;
-            border-bottom: 1px solid var(--border);
-        }
-        .memory-feed { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px;}
-        .memory-item { padding: 12px; border-radius: 6px; background: var(--bg-panel); font-size: 13px; line-height: 1.5; border-left: 2px solid transparent;}
-        .memory-item.success { border-left-color: var(--accent-green); }
-        .memory-item.error { border-left-color: var(--accent-red); }
-        .memory-item.objective { border-left-color: var(--accent); }
-        .memory-meta { display: flex; justify-content: space-between; color: var(--text-muted); font-size: 11px; margin-bottom: 4px;}
 
-        /* Main Center: Conversational Feed */
-        .main-feed { 
-            display: flex; 
-            flex-direction: column; 
-            background-color: var(--bg-base); 
+        /* Left: Orchestrator Context (Claw) */
+        .orchestrator-panel {
+            width: 380px;
+            background: var(--bg-surface);
+            border-right: 1px solid var(--border-subtle);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            padding: 12px 16px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .claw-thoughts {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .thought-line { color: var(--claw-accent); line-height: 1.5; }
+        .thought-line::before { content: "» "; opacity: 0.5; }
+
+        .memory-ledger {
+            height: 40%;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-deep);
+        }
+        .memory-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .memory-item {
+            font-size: 12px;
+            color: var(--text-secondary);
+            padding: 8px;
+            background: var(--bg-surface);
+            border-left: 2px solid var(--border-focus);
+            line-height: 1.4;
+        }
+        .memory-item.highlight { border-left-color: var(--success); color: var(--text-primary); }
+
+        /* Right: Parallel Execution Matrix (Workers) */
+        .execution-matrix {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-deep);
             position: relative;
         }
-        .feed-header {
+
+        .matrix-header {
             padding: 12px 24px;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .view-controls {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .kbd-hint {
+            font-family: var(--font-mono);
+            background: var(--bg-surface);
+            padding: 2px 6px;
+            border-radius: 3px;
+            border: 1px solid var(--border-subtle);
+            font-size: 10px;
+        }
+
+        .swimlanes {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* The Swimlane Concept: Visualizing Parallelism */
+        .swimlane {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+        .swimlane.active-focus { border-color: var(--worker-accent); }
+
+        .swimlane-header {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            background: var(--bg-surface-elevated);
+            border-bottom: 1px solid var(--border-subtle);
+            gap: 16px;
+            cursor: pointer;
+        }
+        .swimlane-header:hover { background: #222; }
+
+        .worker-id {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--worker-accent);
+            width: 120px;
+        }
+
+        .task-desc {
+            flex: 1;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tenacity-ring {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .status-badge {
+            font-size: 10px;
+            text-transform: uppercase;
+            font-weight: 800;
+            padding: 4px 8px;
+            border-radius: 2px;
+            letter-spacing: 1px;
+        }
+        .status-running { background: rgba(255, 109, 0, 0.1); color: var(--worker-accent); }
+        .status-success { background: rgba(0, 230, 118, 0.1); color: var(--success); }
+        .status-error { background: rgba(255, 23, 68, 0.1); color: var(--error); }
+
+        .swimlane-body {
+            display: none; /* Hidden by default, expanded via Focus Mode */
+            padding: 16px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            background: #0a0a0a;
+            color: var(--text-secondary);
+            max-height: 200px;
+            overflow-y: auto;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .swimlane.expanded .swimlane-body { display: block; }
+        
+        .log-entry { margin-bottom: 4px; }
+        .log-entry.action { color: #fff; }
+
+        .swimlane-footer {
             display: flex;
             align-items: center;
             justify-content: space-between;
+            padding: 8px 16px;
+            font-size: 11px;
+            background: var(--bg-surface);
         }
-        .feed-tools { display: flex; gap: 12px; align-items: center;}
-        .toggle-btn {
+        
+        .btn-intervene {
             background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-muted);
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
+            border: 1px solid var(--border-focus);
+            color: var(--text-primary);
+            padding: 4px 12px;
+            border-radius: 3px;
             cursor: pointer;
-            display: flex; align-items: center; gap: 6px;
-        }
-        .toggle-btn:hover { background: var(--bg-hover); color: var(--text-main);}
-        .toggle-btn.active { background: var(--bg-hover); color: var(--text-main); border-color: var(--text-muted);}
-        .toggle-btn kbd { font-family: var(--font-mono); font-size: 10px; background: var(--bg-base); padding: 1px 4px; border-radius: 2px;}
-
-        .feed-content { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 24px; scroll-behavior: smooth;}
-        
-        /* Agent Message Nodes */
-        .msg-node { display: flex; flex-direction: column; gap: 8px; max-width: 800px; margin: 0 auto; width: 100%;}
-        .msg-header { display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 14px;}
-        .msg-header .badge { font-size: 10px; background: var(--bg-hover); padding: 2px 6px; border-radius: 12px; text-transform: uppercase;}
-        
-        .thought-block {
-            background: var(--bg-panel);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 16px;
             font-family: var(--font-mono);
-            font-size: 13px;
-            color: var(--text-muted);
-            line-height: 1.6;
-            transition: all 0.2s;
+            font-size: 10px;
+            text-transform: uppercase;
         }
-        .thought-block.hidden { display: none; }
-        
-        /* Input Area */
-        .input-area { padding: 24px; border-top: 1px solid var(--border); background: var(--bg-base); display: flex; flex-direction: column; align-items: center;}
-        .input-wrapper { display: flex; width: 100%; max-width: 800px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; focus-within: border-color: var(--text-muted);}
-        .input-wrapper input { flex: 1; background: transparent; border: none; padding: 16px; color: var(--text-main); font-size: 15px; outline: none;}
-        .input-wrapper button { background: var(--text-main); color: var(--bg-base); border: none; padding: 0 24px; font-weight: 600; cursor: pointer;}
-        .input-wrapper button:disabled { background: var(--text-muted); cursor: not-allowed;}
+        .btn-intervene:hover { border-color: var(--worker-accent); color: var(--worker-accent); }
 
-        /* Right Sidebar: Worker Matrix / Tools */
-        .right-sidebar { background-color: var(--bg-base); border-left: 1px solid var(--border); display: flex; flex-direction: column; }
-        .worker-list { padding: 16px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto;}
-        
-        .worker-mini-card {
-            background: var(--bg-panel);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 12px;
-            font-size: 13px;
+        /* HUD Overlay for status */
+        .hud-overlay {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: var(--font-mono);
+            color: var(--border-focus);
+            font-size: 24px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            pointer-events: none;
+            text-align: center;
         }
-        .worker-mini-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 500;}
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px;}
-        .dot-init { background: var(--text-muted); }
-        .dot-active { background: var(--accent); box-shadow: 0 0 8px var(--accent);}
-        .dot-success { background: var(--accent-green); }
-        .dot-error { background: var(--accent-red); }
-
-        /* Search Overlay */
-        .search-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); display: none; align-items: flex-start; justify-content: center; padding-top: 10vh; z-index: 50;}
-        .search-box { background: var(--bg-panel); border: 1px solid var(--border); width: 600px; border-radius: 8px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); overflow: hidden;}
-        .search-box input { width: 100%; padding: 16px 20px; background: transparent; border: none; border-bottom: 1px solid var(--border); color: white; font-size: 16px; outline: none;}
-        .search-results { padding: 10px; color: var(--text-muted); font-size: 13px; text-align: center;}
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="logo">
-            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-            ClawsView
+    <div class="architect-bar">
+        <div class="brand">
+            <span class="claw">Claw</span>
+            <span class="code">Code</span>
         </div>
-        <div class="search-trigger" onclick="toggleSearch()">
-            <span>Search workspace...</span>
-            <kbd>⌘K</kbd>
-        </div>
-    </header>
-
-    <div class="sidebar">
-        <div class="panel-header">Memory Ledger</div>
-        <div class="memory-feed" id="memory-feed">
-            <div style="color: var(--text-muted); font-size: 13px; padding: 12px; text-align: center;">Memory is empty.</div>
+        <div class="objective-input">
+            <input type="text" id="objective-input" placeholder="Define the high-level objective for the Orchestrator..." value="Here is the local IP and username/password of my DGX Spark. Log in, set up ssh keys, set up vLLM...">
+            <button class="btn-launch" id="btn-deploy" onclick="deployClaw()">Execute</button>
         </div>
     </div>
 
-    <div class="main-feed">
-        <div class="feed-header">
-            <div id="active-objective" style="font-size: 14px; font-weight: 500; color: var(--text-muted);">Ready for instructions.</div>
-            <div class="feed-tools">
-                <button class="toggle-btn active" id="btn-thoughts" onclick="toggleThoughts()">
-                    Show Thinking <kbd>T</kbd>
-                </button>
+    <div class="workspace">
+        <!-- Orchestrator Context -->
+        <div class="orchestrator-panel">
+            <div class="panel-header">
+                <span>Orchestrator Logic</span>
+                <span style="color: var(--claw-accent)">CLAW-01</span>
+            </div>
+            <div class="claw-thoughts" id="claw-thoughts">
+                <div style="color: var(--text-secondary); opacity: 0.5;">Awaiting objective...</div>
+            </div>
+
+            <div class="memory-ledger">
+                <div class="panel-header" style="border-top: 1px solid var(--border-subtle)">
+                    <span>Shared Memory Ledger</span>
+                    <span class="kbd-hint">Auto-Sync</span>
+                </div>
+                <div class="memory-list" id="memory-feed">
+                    <div style="color: var(--text-secondary); opacity: 0.5; font-size: 12px; text-align: center; margin-top: 20px;">Ledger is empty.</div>
+                </div>
             </div>
         </div>
-        
-        <div class="feed-content" id="feed-content">
-            <!-- Feed nodes go here -->
-        </div>
 
-        <div class="input-area">
-            <div class="input-wrapper">
-                <input type="text" id="objective-input" placeholder="Give the orchestrator a task..." value="Here is the local IP and username/password of my DGX Spark. Log in, set up ssh keys, set up vLLM...">
-                <button id="btn-deploy" onclick="deployClaw()">Run</button>
+        <!-- Parallel Execution Matrix -->
+        <div class="execution-matrix">
+            <div class="matrix-header">
+                <span style="font-size: 12px; font-weight: 700; color: var(--text-secondary); letter-spacing: 1px; text-transform: uppercase;">Parallel Code Instances</span>
+                <div class="view-controls">
+                    <span>Toggle Logs: <kbd class="kbd-hint">Space</kbd></span>
+                    <span>Navigate: <kbd class="kbd-hint">↑</kbd> <kbd class="kbd-hint">↓</kbd></span>
+                </div>
             </div>
-        </div>
-    </div>
+            
+            <div class="hud-overlay" id="hud-status">STANDBY</div>
 
-    <div class="right-sidebar">
-        <div class="panel-header">Parallel Workers</div>
-        <div class="worker-list" id="worker-list">
-            <div style="color: var(--text-muted); font-size: 13px; text-align: center; margin-top: 20px;">No active workers.</div>
-        </div>
-    </div>
-
-    <!-- CMD+K Search Overlay -->
-    <div class="search-overlay" id="search-overlay">
-        <div class="search-box">
-            <input type="text" placeholder="Search logs, memory, and code (FTS5 Mock)..." id="search-input">
-            <div class="search-results">Start typing to search...</div>
+            <div class="swimlanes" id="worker-matrix">
+                <!-- Swimlanes injected here -->
+            </div>
         </div>
     </div>
 
     <script>
         const ws = new WebSocket("ws://" + window.location.host + "/ws/events");
-        const feedContent = document.getElementById("feed-content");
+        const workerMatrix = document.getElementById("worker-matrix");
+        const clawThoughts = document.getElementById("claw-thoughts");
         const memoryFeed = document.getElementById("memory-feed");
-        const workerList = document.getElementById("worker-list");
-        const activeObjective = document.getElementById("active-objective");
+        const hudStatus = document.getElementById("hud-status");
         
         let workers = {};
-        let showThoughts = true;
+        let focusedWorkerId = null;
 
-        // Keyboard Shortcuts
+        // --- Core Inspiration Applied: Keyboard-driven Focus Mode ---
+        // Instead of a global "thinking" toggle, we allow the Architect to 
+        // focus on specific parallel streams without losing the big picture.
         document.addEventListener('keydown', (e) => {
-            // Cmd+K / Ctrl+K for search
-            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            if (document.activeElement.tagName === 'INPUT') return;
+
+            const workerIds = Object.keys(workers);
+            if (workerIds.length === 0) return;
+
+            let currentIndex = workerIds.indexOf(focusedWorkerId);
+
+            if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                toggleSearch();
-            }
-            // 't' to toggle thoughts (if not typing in input)
-            if (e.key === 't' && document.activeElement.tagName !== 'INPUT') {
+                currentIndex = currentIndex < workerIds.length - 1 ? currentIndex + 1 : 0;
+                setFocus(workerIds[currentIndex]);
+            } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
-                toggleThoughts();
-            }
-            // ESC to close search
-            if (e.key === 'Escape') {
-                document.getElementById('search-overlay').style.display = 'none';
+                currentIndex = currentIndex > 0 ? currentIndex - 1 : workerIds.length - 1;
+                setFocus(workerIds[currentIndex]);
+            } else if (e.key === ' ' && focusedWorkerId) { // Spacebar to expand logs
+                e.preventDefault();
+                toggleExpand(focusedWorkerId);
             }
         });
 
-        function toggleSearch() {
-            const overlay = document.getElementById('search-overlay');
-            if (overlay.style.display === 'flex') {
-                overlay.style.display = 'none';
-            } else {
-                overlay.style.display = 'flex';
-                document.getElementById('search-input').focus();
+        function setFocus(id) {
+            if (focusedWorkerId) {
+                workers[focusedWorkerId].element.classList.remove('active-focus');
+            }
+            focusedWorkerId = id;
+            if (id && workers[id]) {
+                workers[id].element.classList.add('active-focus');
+                workers[id].element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
         }
 
-        function toggleThoughts() {
-            showThoughts = !showThoughts;
-            const btn = document.getElementById('btn-thoughts');
-            btn.classList.toggle('active', showThoughts);
-            
-            document.querySelectorAll('.thought-block').forEach(el => {
-                if (showThoughts) el.classList.remove('hidden');
-                else el.classList.add('hidden');
-            });
+        function toggleExpand(id) {
+            if (workers[id]) {
+                workers[id].element.classList.toggle('expanded');
+            }
         }
 
         ws.onmessage = (event) => {
@@ -277,110 +421,102 @@
             handleEvent(msg.type, msg.data);
         };
 
-        function addFeedNode(sender, role, content, isThought = false) {
-            const node = document.createElement('div');
-            node.className = 'msg-node';
-            
-            const thoughtClass = (isThought && !showThoughts) ? 'hidden' : '';
-            const contentHtml = isThought 
-                ? `<div class="thought-block ${thoughtClass}">${content}</div>`
-                : `<div style="font-size: 15px; line-height: 1.6;">${content}</div>`;
-
-            node.innerHTML = `
-                <div class="msg-header">
-                    <span>${sender}</span>
-                    <span class="badge">${role}</span>
-                </div>
-                ${contentHtml}
-            `;
-            feedContent.appendChild(node);
-            feedContent.scrollTop = feedContent.scrollHeight;
-        }
-
         function handleEvent(type, data) {
             if (type === "objective_start") {
-                activeObjective.innerText = "Active: " + data.objective.substring(0, 50) + "...";
-                feedContent.innerHTML = '';
-                workerList.innerHTML = '';
-                addFeedNode('Human', 'Architect', data.objective, false);
+                hudStatus.style.display = 'none';
+                clawThoughts.innerHTML = '';
+                workerMatrix.innerHTML = '';
+                workers = {};
+                focusedWorkerId = null;
             }
             else if (type === "claw_update") {
-                addFeedNode('Orchestrator Claw', 'Manager', `> ${data.log}`, true);
+                const log = document.createElement("div");
+                log.className = "thought-line";
+                log.innerText = data.log;
+                clawThoughts.appendChild(log);
+                clawThoughts.scrollTop = clawThoughts.scrollHeight;
             }
             else if (type === "task_tree") {
-                addFeedNode('Orchestrator Claw', 'Manager', `Created ${data.tasks.length} sub-tasks. Spinning up workers...`, false);
-                workerList.innerHTML = '';
-                data.tasks.forEach(task => createWorkerMini(task));
+                data.tasks.forEach((task, index) => {
+                    createSwimlane(task);
+                    if (index === 0) setFocus(task.id); // Auto-focus first
+                });
             }
             else if (type === "worker_update") {
-                updateWorkerMini(data);
-                if (data.status === "Success" || data.status === "Failed") {
-                     addFeedNode(`Worker [${data.task_id}]`, 'Execution', `Status: ${data.status}. Log: ${data.log}`, false);
-                } else {
-                     // Log internal loop states as thoughts
-                     addFeedNode(`Worker [${data.task_id}]`, 'Execution', `[Attempt ${data.loop}] ${data.log}`, true);
-                }
+                updateSwimlane(data);
             }
             else if (type === "memory_update") {
                 renderMemory(data.memory);
             }
             else if (type === "orchestration_complete") {
-                const statusStr = data.status === 'success' ? 'successfully' : 'with errors';
-                activeObjective.innerText = `Finished ${statusStr}. Ready for next instruction.`;
-                addFeedNode('Orchestrator Claw', 'Manager', `Orchestration completed ${statusStr}. Handoff to human complete.`, false);
+                hudStatus.style.display = 'block';
+                hudStatus.innerText = data.status === 'success' ? "MISSION ACCOMPLISHED" : "SYSTEM HALT";
+                hudStatus.style.color = data.status === 'success' ? 'var(--success)' : 'var(--error)';
             }
         }
 
-        function createWorkerMini(task) {
-            const card = document.createElement("div");
-            card.className = "worker-mini-card";
-            card.id = `worker-${task.id}`;
-            card.innerHTML = `
-                <div class="worker-mini-header">
-                    <span><span class="status-dot dot-init" id="dot-${task.id}"></span>${task.id}</span>
-                    <span style="color: var(--text-muted); font-size: 11px;" id="loop-${task.id}">0/3</span>
+        function createSwimlane(task) {
+            const lane = document.createElement("div");
+            lane.className = "swimlane";
+            lane.id = `lane-${task.id}`;
+            
+            lane.innerHTML = `
+                <div class="swimlane-header" onclick="setFocus('${task.id}'); toggleExpand('${task.id}')">
+                    <div class="worker-id">WRK::${task.id.substring(0,8).toUpperCase()}</div>
+                    <div class="task-desc">${task.desc}</div>
+                    <div class="tenacity-ring">
+                        <span id="loop-${task.id}">L:0</span>
+                    </div>
+                    <div class="status-badge status-running" id="status-${task.id}">INIT</div>
                 </div>
-                <div style="color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="statustext-${task.id}">Booting...</div>
+                <div class="swimlane-body" id="body-${task.id}">
+                    <div class="log-entry">Initializing environment sequence...</div>
+                </div>
+                <div class="swimlane-footer">
+                    <span style="color: var(--text-secondary)">Last active: just now</span>
+                    <button class="btn-intervene" onclick="alert('Architect intervention for ${task.id}')">Inject Context</button>
+                </div>
             `;
-            workerList.appendChild(card);
-            workers[task.id] = card;
+            workerMatrix.appendChild(lane);
+            workers[task.id] = { element: lane, logContainer: lane.querySelector(`#body-${task.id}`) };
         }
 
-        function updateWorkerMini(data) {
+        function updateSwimlane(data) {
             if (!workers[data.task_id]) return;
             
-            const dotEl = document.getElementById(`dot-${data.task_id}`);
-            const textEl = document.getElementById(`statustext-${data.task_id}`);
+            const w = workers[data.task_id];
+            const statusEl = document.getElementById(`status-${data.task_id}`);
             const loopEl = document.getElementById(`loop-${data.task_id}`);
 
-            textEl.innerText = data.status;
-            loopEl.innerText = data.loop;
+            // Update Header
+            statusEl.innerText = data.status;
+            loopEl.innerText = `L:${data.loop.split('/')[0]}`; // Just show current attempt number
 
-            dotEl.className = "status-dot";
-            if (data.status === "Success") dotEl.classList.add("dot-success");
-            else if (data.status === "Failed") dotEl.classList.add("dot-error");
-            else dotEl.classList.add("dot-active");
+            statusEl.className = "status-badge";
+            if (data.status === "Success") statusEl.classList.add("status-success");
+            else if (data.status === "Failed") statusEl.classList.add("status-error");
+            else statusEl.classList.add("status-running");
+
+            // Append to internal log
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${data.status === 'Acting' ? 'action' : ''}`;
+            logEntry.innerText = `[${new Date().toLocaleTimeString().split(' ')[0]}] ${data.status.padEnd(10)} | ${data.log}`;
+            w.logContainer.appendChild(logEntry);
+            w.logContainer.scrollTop = w.logContainer.scrollHeight;
         }
 
         function renderMemory(memoryArray) {
             memoryFeed.innerHTML = '';
-            [...memoryArray].reverse().slice(0, 30).forEach(note => {
+            [...memoryArray].reverse().slice(0, 20).forEach(note => {
                 const el = document.createElement("div");
-                el.className = "memory-item";
-                
-                const time = new Date(note.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                el.className = `memory-item ${note.tags.includes('success') ? 'highlight' : ''}`;
                 
                 el.innerHTML = `
-                    <div class="memory-meta">
-                        <span>${note.agent_id}</span>
-                        <span>${time}</span>
+                    <div style="font-family: var(--font-mono); font-size: 10px; margin-bottom: 4px; opacity: 0.7;">
+                        SRC: ${note.agent_id}
                     </div>
                     <div>${note.note}</div>
                 `;
-                if(note.tags.includes('error')) el.classList.add('error');
-                if(note.tags.includes('success')) el.classList.add('success');
-                if(note.tags.includes('objective')) el.classList.add('objective');
-                
                 memoryFeed.appendChild(el);
             });
         }
@@ -389,7 +525,7 @@
             const objective = document.getElementById("objective-input").value;
             const btn = document.getElementById("btn-deploy");
             btn.disabled = true;
-            btn.innerText = "Running...";
+            btn.innerText = "RUNNING";
             
             await fetch("/api/orchestrate", {
                 method: "POST",
@@ -399,7 +535,7 @@
 
             setTimeout(() => {
                 btn.disabled = false;
-                btn.innerText = "Run";
+                btn.innerText = "EXECUTE";
             }, 2000);
         }
     </script>
