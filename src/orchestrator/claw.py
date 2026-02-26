@@ -5,6 +5,8 @@ from src.memory.ledger import MemoryLedger
 from src.events import emit_event
 from src.orchestrator.router import TriageRouter
 
+from src.worker.reviewer_instance import ReviewerInstance
+
 class ClawOrchestrator:
     def __init__(self, api_key: str = None):
         self.api_key = api_key
@@ -40,27 +42,49 @@ class ClawOrchestrator:
         await self._emit_claw("Initializing TriageRouter and subscribing parallel Code instances...")
         
         for task in sub_tasks:
+            # 1. Create the code instance (Worker)
+            # It will now emit a 'completed' event for the Reviewer instead of the final target.
             worker = CodeInstance(
                 task_id=task["id"], 
                 description=task["desc"], 
                 memory_store=self.memory, 
                 router=self.router, 
-                emits=task["emits"],
+                emits=[f"task:completed:{task['id']}"], 
                 api_key=self.api_key
             )
             self.workers.append(worker)
 
-            # Create a closure to capture the correct worker
-            async def handler_factory(w: CodeInstance, p: dict):
-                await self._emit_claw(f"Event received, dispatching worker {w.task_id}...")
+            # 2. Create the Reviewer instance (Quality Gate)
+            # It will emit the final target 'emits' upon approval.
+            reviewer = ReviewerInstance(
+                task_id=task["id"],
+                memory_store=self.memory,
+                router=self.router,
+                approved_emits=task["emits"]
+            )
+
+            # Handler factories using default argument closure pattern
+            async def worker_handler_factory(w: CodeInstance, p: dict):
+                await self._emit_claw(f"Trigger received, dispatching worker {w.task_id}...")
                 result = await w.execute(p)
                 self.results.append(result)
 
-            # Subscribe the worker's execution to its trigger pattern
-            # Using default arguments in lambda to capture the variable properly
+            async def reviewer_handler_factory(r: ReviewerInstance, p: dict):
+                await self._emit_claw(f"Review gate triggered for {r.task_id}, dispatching reviewer...")
+                await r.execute(p)
+
+            # Subscriptions
             self.router.subscribe(
                 task["triggers_on"], 
-                lambda payload, w=worker: handler_factory(w, payload)
+                lambda payload, w=worker: worker_handler_factory(w, payload)
+            )
+            self.router.subscribe(
+                f"task:rejected:{task['id']}",
+                lambda payload, w=worker: worker_handler_factory(w, payload)
+            )
+            self.router.subscribe(
+                f"task:completed:{task['id']}",
+                lambda payload, r=reviewer: reviewer_handler_factory(r, payload)
             )
 
         self.router.start()
@@ -73,14 +97,20 @@ class ClawOrchestrator:
         await self.router.stop()
 
         await self._emit_claw("Synthesizing results and performing high-level verification...")
-        all_success = len(self.results) == len(self.workers) and all(res["status"] == "success" for res in self.results)
+        
+        # Collect final statuses for each sub-task ID
+        final_statuses = {}
+        for res in self.results:
+            final_statuses[res["task_id"]] = res["status"]
+
+        all_success = len(final_statuses) == len(sub_tasks) and all(s == "success" for s in final_statuses.values())
 
         if all_success:
             await self._emit_claw("Verification passed. All sub-tasks succeeded.")
             self.memory.add_note("Claw", "Objective completed successfully.", tags=["success"])
         else:
-            await self._emit_claw("Verification failed. Some workers did not complete their tasks or were not triggered.")
-            self.memory.add_note("Claw", "Objective failed during synthesis.", tags=["error"])
+            await self._emit_claw("Verification failed or stuck. Some workers did not complete their tasks.")
+            self.memory.add_note("Claw", "Objective failed during synthesis.", tags=["error"], importance=5)
         
         await emit_event("memory_update", {"memory": self.memory.memory})
 

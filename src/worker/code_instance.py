@@ -68,5 +68,17 @@ class CodeInstance:
                 )
                 await emit_event("memory_update", {"memory": self.memory.memory})
 
-        await self._emit("Failed", "Max retries exceeded.", self.max_retries)
-        return {"task_id": self.task_id, "status": "failed", "output": "Max retries exceeded."}
+        await self._emit("Stuck", "⚠️ STUCK - ESCALATION REQUIRED. Max retries exceeded.", self.max_retries)
+        self.memory.add_note(
+            agent_id=f"Worker-{self.task_id}",
+            note=f"ESCALATION: Worker stuck after {self.max_retries} attempts.",
+            tags=["error", "escalation", self.task_id],
+            importance=5
+        )
+        await emit_event("memory_update", {"memory": self.memory.memory})
+        
+        # Publish a specific stuck event to the router
+        if self.router:
+            await self.router.publish("worker:stuck", {"task_id": self.task_id})
+            
+        return {"task_id": self.task_id, "status": "stuck", "output": "Escalation required."}

@@ -255,8 +255,16 @@
             letter-spacing: 1px;
         }
         .status-running { background: rgba(255, 109, 0, 0.1); color: var(--worker-accent); }
+        .status-reviewing { background: rgba(139, 92, 246, 0.1); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.3); }
+        .status-stuck { background: rgba(239, 68, 68, 0.2); color: var(--error); border: 1px solid var(--error); animation: pulse-red 2s infinite; }
         .status-success { background: rgba(0, 230, 118, 0.1); color: var(--success); }
         .status-error { background: rgba(255, 23, 68, 0.1); color: var(--error); }
+
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
 
         .swimlane-body {
             display: none; /* Hidden by default, expanded via Focus Mode */
@@ -496,25 +504,36 @@
         }
 
         function updateSwimlane(data) {
-            if (!workers[data.task_id]) return;
+            let targetId = data.task_id;
+            const isReviewer = targetId.startsWith('Reviewer-');
+            if (isReviewer) {
+                targetId = targetId.replace('Reviewer-', '');
+            }
+
+            if (!workers[targetId]) return;
             
-            const w = workers[data.task_id];
-            const statusEl = document.getElementById(`status-${data.task_id}`);
-            const loopEl = document.getElementById(`loop-${data.task_id}`);
+            const w = workers[targetId];
+            const statusEl = document.getElementById(`status-${targetId}`);
+            const loopEl = document.getElementById(`loop-${targetId}`);
 
             // Update Header
-            statusEl.innerText = data.status;
-            loopEl.innerText = `L:${data.loop.split('/')[0]}`; // Just show current attempt number
+            statusEl.innerText = isReviewer ? `REVIEW: ${data.status}` : data.status;
+            if (data.loop) {
+                loopEl.innerText = `L:${data.loop.split('/')[0]}`;
+            }
 
             statusEl.className = "status-badge";
             if (data.status === "Success") statusEl.classList.add("status-success");
             else if (data.status === "Failed") statusEl.classList.add("status-error");
+            else if (data.status === "Reviewing") statusEl.classList.add("status-reviewing");
+            else if (data.status === "Stuck") statusEl.classList.add("status-stuck");
             else statusEl.classList.add("status-running");
 
             // Append to internal log
             const logEntry = document.createElement('div');
+            const prefix = isReviewer ? "[REVIEW] " : "";
             logEntry.className = `log-entry ${data.status === 'Acting' ? 'action' : ''}`;
-            logEntry.innerText = `[${new Date().toLocaleTimeString().split(' ')[0]}] ${data.status.padEnd(10)} | ${data.log}`;
+            logEntry.innerText = `[${new Date().toLocaleTimeString().split(' ')[0]}] ${prefix}${data.status.padEnd(10)} | ${data.log}`;
             w.logContainer.appendChild(logEntry);
             w.logContainer.scrollTop = w.logContainer.scrollHeight;
         }
@@ -523,11 +542,19 @@
             memoryFeed.innerHTML = '';
             [...memoryArray].reverse().slice(0, 20).forEach(note => {
                 const el = document.createElement("div");
+                const importance = note.importance || 1;
                 el.className = `memory-item ${note.tags.includes('success') ? 'highlight' : ''}`;
                 
+                if (importance >= 4) {
+                    el.style.borderLeftWidth = '4px';
+                    el.style.background = 'rgba(239, 68, 68, 0.05)';
+                    if (importance === 5) el.style.borderLeftColor = 'var(--error)';
+                }
+
                 el.innerHTML = `
-                    <div style="font-family: var(--font-mono); font-size: 10px; margin-bottom: 4px; opacity: 0.7;">
-                        SRC: ${note.agent_id}
+                    <div style="font-family: var(--font-mono); font-size: 10px; margin-bottom: 4px; opacity: 0.7; display: flex; justify-content: space-between;">
+                        <span>SRC: ${note.agent_id}</span>
+                        <span>IMP: ${importance}</span>
                     </div>
                     <div>${note.note}</div>
                 `;
