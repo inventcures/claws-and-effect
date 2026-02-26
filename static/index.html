@@ -3,209 +3,383 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Claws & Code - Perceptive UI</title>
+    <title>Claws & Code - AgentsView Inspired</title>
     <style>
         :root {
-            --bg-dark: #0f172a;
-            --bg-panel: #1e293b;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --accent-blue: #3b82f6;
-            --accent-green: #10b981;
+            /* Inspired by AgentsView / shadcn dark theme */
+            --bg-base: #09090b;
+            --bg-panel: #18181b;
+            --bg-hover: #27272a;
+            --border: #27272a;
+            --text-main: #fafafa;
+            --text-muted: #a1a1aa;
+            --accent: #3b82f6;
+            --accent-green: #22c55e;
             --accent-red: #ef4444;
-            --accent-yellow: #f59e0b;
-            --border: #334155;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-mono: 'ui-monospace', 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
         }
-        body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background-color: var(--bg-dark); color: var(--text-main); display: grid; grid-template-rows: 80px 1fr; grid-template-columns: 300px 1fr 300px; height: 100vh; overflow: hidden; }
+
+        * { box-sizing: border-box; }
+
+        body { 
+            margin: 0; 
+            font-family: var(--font-sans); 
+            background-color: var(--bg-base); 
+            color: var(--text-main); 
+            display: grid; 
+            grid-template-rows: 60px 1fr; 
+            grid-template-columns: 280px 1fr 320px; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
         
-        /* Zone A: Command Deck */
-        .command-deck { grid-column: 1 / -1; background-color: var(--bg-panel); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 20px; }
-        .command-deck input { flex: 1; padding: 12px; background: var(--bg-dark); border: 1px solid var(--border); color: white; border-radius: 6px; font-size: 16px; }
-        .command-deck button { padding: 12px 24px; background: var(--accent-blue); border: none; color: white; font-weight: bold; border-radius: 6px; cursor: pointer; transition: 0.2s; }
-        .command-deck button:hover { background: #2563eb; }
-        .status-bar { padding: 8px 16px; background: #1e3a8a; border-radius: 20px; font-size: 14px; font-weight: 500; }
+        /* Header / Command Deck */
+        header { 
+            grid-column: 1 / -1; 
+            background-color: var(--bg-base); 
+            border-bottom: 1px solid var(--border); 
+            display: flex; 
+            align-items: center; 
+            padding: 0 20px; 
+            gap: 16px; 
+        }
+        .logo { font-weight: 700; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px;}
+        .logo svg { width: 18px; height: 18px; fill: var(--text-main); }
+        
+        .search-trigger {
+            margin-left: auto;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 40px;
+            cursor: pointer;
+        }
+        .search-trigger kbd { font-family: var(--font-mono); background: var(--bg-hover); padding: 2px 4px; border-radius: 4px; font-size: 11px;}
 
-        /* Zone B: Claw Hub */
-        .claw-hub { background-color: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; }
-        .panel-header { padding: 16px; font-weight: bold; border-bottom: 1px solid var(--border); text-transform: uppercase; font-size: 12px; letter-spacing: 1px; color: var(--text-muted); }
-        .thought-stream { padding: 16px; display: flex; flex-direction: column; gap: 12px; font-size: 13px; font-family: monospace; flex: 1; overflow-y: auto;}
-        .thought-log { padding: 8px; background: var(--bg-dark); border-left: 3px solid var(--accent-blue); border-radius: 4px; }
+        /* Left Sidebar: Memory / Sessions */
+        .sidebar { 
+            background-color: var(--bg-base); 
+            border-right: 1px solid var(--border); 
+            display: flex; 
+            flex-direction: column; 
+        }
+        .panel-header { 
+            padding: 16px; 
+            font-size: 12px; 
+            font-weight: 600; 
+            color: var(--text-muted); 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+        }
+        .memory-feed { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px;}
+        .memory-item { padding: 12px; border-radius: 6px; background: var(--bg-panel); font-size: 13px; line-height: 1.5; border-left: 2px solid transparent;}
+        .memory-item.success { border-left-color: var(--accent-green); }
+        .memory-item.error { border-left-color: var(--accent-red); }
+        .memory-item.objective { border-left-color: var(--accent); }
+        .memory-meta { display: flex; justify-content: space-between; color: var(--text-muted); font-size: 11px; margin-bottom: 4px;}
 
-        /* Zone C: Worker Matrix */
-        .worker-matrix { padding: 24px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; align-content: start;}
-        .worker-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s;}
-        .worker-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
-        .worker-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02);}
-        .worker-title { font-weight: 600; font-size: 14px; }
-        .status-pill { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
-        .status-researching { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
-        .status-acting { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
-        .status-verifying { background: rgba(139, 92, 246, 0.2); color: #c084fc; }
-        .status-success { background: rgba(16, 185, 129, 0.2); color: #34d399; }
-        .worker-body { padding: 16px; flex: 1; display: flex; flex-direction: column; gap: 12px;}
-        .worker-desc { font-size: 13px; color: var(--text-muted); }
-        .loop-indicator { font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; }
-        .worker-log { background: #000; color: #a3e635; padding: 10px; border-radius: 6px; font-family: monospace; font-size: 12px; white-space: pre-wrap; height: 60px; overflow-y: auto;}
-        .btn-intervene { margin-top: auto; padding: 8px; background: transparent; border: 1px solid var(--border); color: var(--text-main); border-radius: 6px; cursor: pointer; font-size: 13px; transition: 0.2s; }
-        .btn-intervene:hover { background: rgba(255,255,255,0.05); }
+        /* Main Center: Conversational Feed */
+        .main-feed { 
+            display: flex; 
+            flex-direction: column; 
+            background-color: var(--bg-base); 
+            position: relative;
+        }
+        .feed-header {
+            padding: 12px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .feed-tools { display: flex; gap: 12px; align-items: center;}
+        .toggle-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .toggle-btn:hover { background: var(--bg-hover); color: var(--text-main);}
+        .toggle-btn.active { background: var(--bg-hover); color: var(--text-main); border-color: var(--text-muted);}
+        .toggle-btn kbd { font-family: var(--font-mono); font-size: 10px; background: var(--bg-base); padding: 1px 4px; border-radius: 2px;}
 
-        /* Zone D: Memory Ledger */
-        .memory-ledger { background-color: var(--bg-panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; }
-        .memory-feed { padding: 16px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;}
-        .memory-note { background: var(--bg-dark); border-radius: 6px; padding: 12px; font-size: 13px; border-left: 3px solid var(--accent-green);}
-        .note-meta { display: flex; justify-content: space-between; color: var(--text-muted); font-size: 11px; margin-bottom: 6px; text-transform: uppercase;}
-        .note-tag { background: #374151; padding: 2px 6px; border-radius: 4px; margin-right: 4px; }
+        .feed-content { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 24px; scroll-behavior: smooth;}
+        
+        /* Agent Message Nodes */
+        .msg-node { display: flex; flex-direction: column; gap: 8px; max-width: 800px; margin: 0 auto; width: 100%;}
+        .msg-header { display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 14px;}
+        .msg-header .badge { font-size: 10px; background: var(--bg-hover); padding: 2px 6px; border-radius: 12px; text-transform: uppercase;}
+        
+        .thought-block {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            transition: all 0.2s;
+        }
+        .thought-block.hidden { display: none; }
+        
+        /* Input Area */
+        .input-area { padding: 24px; border-top: 1px solid var(--border); background: var(--bg-base); display: flex; flex-direction: column; align-items: center;}
+        .input-wrapper { display: flex; width: 100%; max-width: 800px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; focus-within: border-color: var(--text-muted);}
+        .input-wrapper input { flex: 1; background: transparent; border: none; padding: 16px; color: var(--text-main); font-size: 15px; outline: none;}
+        .input-wrapper button { background: var(--text-main); color: var(--bg-base); border: none; padding: 0 24px; font-weight: 600; cursor: pointer;}
+        .input-wrapper button:disabled { background: var(--text-muted); cursor: not-allowed;}
+
+        /* Right Sidebar: Worker Matrix / Tools */
+        .right-sidebar { background-color: var(--bg-base); border-left: 1px solid var(--border); display: flex; flex-direction: column; }
+        .worker-list { padding: 16px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto;}
+        
+        .worker-mini-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 13px;
+        }
+        .worker-mini-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 500;}
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px;}
+        .dot-init { background: var(--text-muted); }
+        .dot-active { background: var(--accent); box-shadow: 0 0 8px var(--accent);}
+        .dot-success { background: var(--accent-green); }
+        .dot-error { background: var(--accent-red); }
+
+        /* Search Overlay */
+        .search-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); display: none; align-items: flex-start; justify-content: center; padding-top: 10vh; z-index: 50;}
+        .search-box { background: var(--bg-panel); border: 1px solid var(--border); width: 600px; border-radius: 8px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); overflow: hidden;}
+        .search-box input { width: 100%; padding: 16px 20px; background: transparent; border: none; border-bottom: 1px solid var(--border); color: white; font-size: 16px; outline: none;}
+        .search-results { padding: 10px; color: var(--text-muted); font-size: 13px; text-align: center;}
     </style>
 </head>
 <body>
 
-    <div class="command-deck">
-        <div style="font-weight: 900; font-size: 20px; letter-spacing: 1px; color: var(--accent-blue);">CLAW // CODE</div>
-        <input type="text" id="objective-input" placeholder="Enter high-level objective in English..." value="Here is the local IP and username/password of my DGX Spark. Log in, set up ssh keys, set up vLLM, download and bench Qwen3-VL...">
-        <button id="btn-deploy" onclick="deployClaw()">Deploy Claw</button>
-        <div class="status-bar" id="global-status">IDLE - AWAITING OBJECTIVE</div>
-    </div>
-
-    <div class="claw-hub">
-        <div class="panel-header">Claw Hub (Orchestrator)</div>
-        <div class="thought-stream" id="thought-stream">
-            <div style="color: var(--text-muted); font-style: italic;">Awaiting cognitive boot...</div>
+    <header>
+        <div class="logo">
+            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            ClawsView
         </div>
-    </div>
-
-    <div class="worker-matrix" id="worker-matrix">
-        <!-- Worker cards will be injected here -->
-        <div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); margin-top: 100px;">
-            <h2>The Matrix is Empty</h2>
-            <p>Deploy a Claw to spin up parallel Code instances.</p>
+        <div class="search-trigger" onclick="toggleSearch()">
+            <span>Search workspace...</span>
+            <kbd>⌘K</kbd>
         </div>
-    </div>
+    </header>
 
-    <div class="memory-ledger">
-        <div class="panel-header">Memory Ledger (Shared State)</div>
+    <div class="sidebar">
+        <div class="panel-header">Memory Ledger</div>
         <div class="memory-feed" id="memory-feed">
-            <!-- Notes injected here -->
+            <div style="color: var(--text-muted); font-size: 13px; padding: 12px; text-align: center;">Memory is empty.</div>
+        </div>
+    </div>
+
+    <div class="main-feed">
+        <div class="feed-header">
+            <div id="active-objective" style="font-size: 14px; font-weight: 500; color: var(--text-muted);">Ready for instructions.</div>
+            <div class="feed-tools">
+                <button class="toggle-btn active" id="btn-thoughts" onclick="toggleThoughts()">
+                    Show Thinking <kbd>T</kbd>
+                </button>
+            </div>
+        </div>
+        
+        <div class="feed-content" id="feed-content">
+            <!-- Feed nodes go here -->
+        </div>
+
+        <div class="input-area">
+            <div class="input-wrapper">
+                <input type="text" id="objective-input" placeholder="Give the orchestrator a task..." value="Here is the local IP and username/password of my DGX Spark. Log in, set up ssh keys, set up vLLM...">
+                <button id="btn-deploy" onclick="deployClaw()">Run</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="right-sidebar">
+        <div class="panel-header">Parallel Workers</div>
+        <div class="worker-list" id="worker-list">
+            <div style="color: var(--text-muted); font-size: 13px; text-align: center; margin-top: 20px;">No active workers.</div>
+        </div>
+    </div>
+
+    <!-- CMD+K Search Overlay -->
+    <div class="search-overlay" id="search-overlay">
+        <div class="search-box">
+            <input type="text" placeholder="Search logs, memory, and code (FTS5 Mock)..." id="search-input">
+            <div class="search-results">Start typing to search...</div>
         </div>
     </div>
 
     <script>
         const ws = new WebSocket("ws://" + window.location.host + "/ws/events");
-        const workerMatrix = document.getElementById("worker-matrix");
-        const thoughtStream = document.getElementById("thought-stream");
+        const feedContent = document.getElementById("feed-content");
         const memoryFeed = document.getElementById("memory-feed");
-        const globalStatus = document.getElementById("global-status");
+        const workerList = document.getElementById("worker-list");
+        const activeObjective = document.getElementById("active-objective");
         
         let workers = {};
+        let showThoughts = true;
+
+        // Keyboard Shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Cmd+K / Ctrl+K for search
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                toggleSearch();
+            }
+            // 't' to toggle thoughts (if not typing in input)
+            if (e.key === 't' && document.activeElement.tagName !== 'INPUT') {
+                e.preventDefault();
+                toggleThoughts();
+            }
+            // ESC to close search
+            if (e.key === 'Escape') {
+                document.getElementById('search-overlay').style.display = 'none';
+            }
+        });
+
+        function toggleSearch() {
+            const overlay = document.getElementById('search-overlay');
+            if (overlay.style.display === 'flex') {
+                overlay.style.display = 'none';
+            } else {
+                overlay.style.display = 'flex';
+                document.getElementById('search-input').focus();
+            }
+        }
+
+        function toggleThoughts() {
+            showThoughts = !showThoughts;
+            const btn = document.getElementById('btn-thoughts');
+            btn.classList.toggle('active', showThoughts);
+            
+            document.querySelectorAll('.thought-block').forEach(el => {
+                if (showThoughts) el.classList.remove('hidden');
+                else el.classList.add('hidden');
+            });
+        }
 
         ws.onmessage = (event) => {
             const msg = JSON.parse(event.data);
             handleEvent(msg.type, msg.data);
         };
 
+        function addFeedNode(sender, role, content, isThought = false) {
+            const node = document.createElement('div');
+            node.className = 'msg-node';
+            
+            const thoughtClass = (isThought && !showThoughts) ? 'hidden' : '';
+            const contentHtml = isThought 
+                ? `<div class="thought-block ${thoughtClass}">${content}</div>`
+                : `<div style="font-size: 15px; line-height: 1.6;">${content}</div>`;
+
+            node.innerHTML = `
+                <div class="msg-header">
+                    <span>${sender}</span>
+                    <span class="badge">${role}</span>
+                </div>
+                ${contentHtml}
+            `;
+            feedContent.appendChild(node);
+            feedContent.scrollTop = feedContent.scrollHeight;
+        }
+
         function handleEvent(type, data) {
             if (type === "objective_start") {
-                globalStatus.innerText = "ORCHESTRATING // DECOMPOSING TASK";
-                globalStatus.style.background = "#b45309";
-                thoughtStream.innerHTML = '';
-                workerMatrix.innerHTML = '';
+                activeObjective.innerText = "Active: " + data.objective.substring(0, 50) + "...";
+                feedContent.innerHTML = '';
+                workerList.innerHTML = '';
+                addFeedNode('Human', 'Architect', data.objective, false);
             }
             else if (type === "claw_update") {
-                const log = document.createElement("div");
-                log.className = "thought-log";
-                log.innerText = `> ${data.log}`;
-                thoughtStream.appendChild(log);
-                thoughtStream.scrollTop = thoughtStream.scrollHeight;
+                addFeedNode('Orchestrator Claw', 'Manager', `> ${data.log}`, true);
             }
             else if (type === "task_tree") {
-                globalStatus.innerText = `ORCHESTRATING // MANAGING ${data.tasks.length} PARALLEL WORKERS`;
-                globalStatus.style.background = "#1e3a8a";
-                data.tasks.forEach(task => {
-                    createWorkerCard(task);
-                });
+                addFeedNode('Orchestrator Claw', 'Manager', `Created ${data.tasks.length} sub-tasks. Spinning up workers...`, false);
+                workerList.innerHTML = '';
+                data.tasks.forEach(task => createWorkerMini(task));
             }
             else if (type === "worker_update") {
-                updateWorkerCard(data);
+                updateWorkerMini(data);
+                if (data.status === "Success" || data.status === "Failed") {
+                     addFeedNode(`Worker [${data.task_id}]`, 'Execution', `Status: ${data.status}. Log: ${data.log}`, false);
+                } else {
+                     // Log internal loop states as thoughts
+                     addFeedNode(`Worker [${data.task_id}]`, 'Execution', `[Attempt ${data.loop}] ${data.log}`, true);
+                }
             }
             else if (type === "memory_update") {
                 renderMemory(data.memory);
             }
             else if (type === "orchestration_complete") {
-                globalStatus.innerText = data.status === 'success' ? "ORCHESTRATION COMPLETE // HANDOFF READY" : "ORCHESTRATION FAILED // INTERVENTION REQUIRED";
-                globalStatus.style.background = data.status === 'success' ? "#065f46" : "#7f1d1d";
+                const statusStr = data.status === 'success' ? 'successfully' : 'with errors';
+                activeObjective.innerText = `Finished ${statusStr}. Ready for next instruction.`;
+                addFeedNode('Orchestrator Claw', 'Manager', `Orchestration completed ${statusStr}. Handoff to human complete.`, false);
             }
         }
 
-        function createWorkerCard(task) {
+        function createWorkerMini(task) {
             const card = document.createElement("div");
-            card.className = "worker-card";
+            card.className = "worker-mini-card";
             card.id = `worker-${task.id}`;
             card.innerHTML = `
-                <div class="worker-header">
-                    <div class="worker-title">${task.id}</div>
-                    <div class="status-pill status-researching" id="status-${task.id}">INIT</div>
+                <div class="worker-mini-header">
+                    <span><span class="status-dot dot-init" id="dot-${task.id}"></span>${task.id}</span>
+                    <span style="color: var(--text-muted); font-size: 11px;" id="loop-${task.id}">0/3</span>
                 </div>
-                <div class="worker-body">
-                    <div class="worker-desc">${task.desc}</div>
-                    <div class="loop-indicator">
-                        <span>Tenacity Loop</span>
-                        <span id="loop-${task.id}">0/3</span>
-                    </div>
-                    <div class="worker-log" id="log-${task.id}">Booting environment...</div>
-                    <button class="btn-intervene" onclick="alert('HITL Intervention triggered for ${task.id}')">Human Intervene</button>
-                </div>
+                <div style="color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="statustext-${task.id}">Booting...</div>
             `;
-            workerMatrix.appendChild(card);
+            workerList.appendChild(card);
             workers[task.id] = card;
         }
 
-        function updateWorkerCard(data) {
+        function updateWorkerMini(data) {
             if (!workers[data.task_id]) return;
             
-            const statusEl = document.getElementById(`status-${data.task_id}`);
-            const logEl = document.getElementById(`log-${data.task_id}`);
+            const dotEl = document.getElementById(`dot-${data.task_id}`);
+            const textEl = document.getElementById(`statustext-${data.task_id}`);
             const loopEl = document.getElementById(`loop-${data.task_id}`);
 
-            statusEl.innerText = data.status;
-            logEl.innerText = `> ${data.log}`;
-            loopEl.innerText = `Attempt ${data.loop}`;
+            textEl.innerText = data.status;
+            loopEl.innerText = data.loop;
 
-            // Style based on status
-            statusEl.className = "status-pill";
-            if (data.status === "Success") {
-                statusEl.classList.add("status-success");
-            } else if (data.status === "Failed") {
-                statusEl.style.background = "rgba(239, 68, 68, 0.2)";
-                statusEl.style.color = "#f87171";
-            } else if (data.status === "Verifying") {
-                statusEl.classList.add("status-verifying");
-            } else if (data.status === "Acting") {
-                statusEl.classList.add("status-acting");
-            } else {
-                statusEl.classList.add("status-researching");
-            }
+            dotEl.className = "status-dot";
+            if (data.status === "Success") dotEl.classList.add("dot-success");
+            else if (data.status === "Failed") dotEl.classList.add("dot-error");
+            else dotEl.classList.add("dot-active");
         }
 
         function renderMemory(memoryArray) {
             memoryFeed.innerHTML = '';
-            // Display last 50 notes, reverse chronological
-            [...memoryArray].reverse().slice(0, 50).forEach(note => {
+            [...memoryArray].reverse().slice(0, 30).forEach(note => {
                 const el = document.createElement("div");
-                el.className = "memory-note";
+                el.className = "memory-item";
                 
-                let tagsHtml = note.tags.map(t => `<span class="note-tag">${t}</span>`).join('');
-                const time = new Date(note.timestamp).toLocaleTimeString();
+                const time = new Date(note.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                 
                 el.innerHTML = `
-                    <div class="note-meta">
+                    <div class="memory-meta">
                         <span>${note.agent_id}</span>
                         <span>${time}</span>
                     </div>
-                    <div style="margin-bottom: 8px;">${note.note}</div>
-                    <div style="font-size: 10px;">${tagsHtml}</div>
+                    <div>${note.note}</div>
                 `;
-                if(note.tags.includes('error')) el.style.borderLeftColor = "var(--accent-red)";
-                if(note.tags.includes('success')) el.style.borderLeftColor = "var(--accent-green)";
-                if(note.tags.includes('objective')) el.style.borderLeftColor = "var(--accent-blue)";
+                if(note.tags.includes('error')) el.classList.add('error');
+                if(note.tags.includes('success')) el.classList.add('success');
+                if(note.tags.includes('objective')) el.classList.add('objective');
                 
                 memoryFeed.appendChild(el);
             });
@@ -215,7 +389,7 @@
             const objective = document.getElementById("objective-input").value;
             const btn = document.getElementById("btn-deploy");
             btn.disabled = true;
-            btn.innerText = "Deploying...";
+            btn.innerText = "Running...";
             
             await fetch("/api/orchestrate", {
                 method: "POST",
@@ -225,7 +399,7 @@
 
             setTimeout(() => {
                 btn.disabled = false;
-                btn.innerText = "Deploy Claw";
+                btn.innerText = "Run";
             }, 2000);
         }
     </script>
